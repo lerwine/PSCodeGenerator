@@ -12,16 +12,31 @@ namespace CsCodeGenerator
 {
     public static class CodeDomExtensions
     {
-        public static bool IsSubNamespace(this CodeNamespace target, CodeNamespace ns) => target != null && ns != null && target.Name.StartsWith(ns.Name + ".");
+        public static bool IsSubNamespace(string target, string ns) => (string.IsNullOrEmpty(target)) ? 
+            string.IsNullOrEmpty(ns) : (!string.IsNullOrEmpty(ns) && target.StartsWith(ns) &&
+            (target.Length == ns.Length || (target.Length > ns.Length && target[ns.Length] == '.')));
+
+        public static bool IsSubNamespace(this CodeNamespace target, CodeNamespace ns) =>
+            target != null && ns != null && IsSubNamespace(target.Name, ns.Name);
 
         public static void WriteCSharpCode(this CodeNamespace @namespace, TextWriter textWriter, CodeGeneratorOptions options)
         {
+            if (@namespace == null)
+                throw new ArgumentNullException("namespace");
+            if (textWriter == null)
+                throw new ArgumentNullException("textWriter");
             using (CodeDomProvider provider = CodeDomProvider.CreateProvider("c#"))
                 @namespace.WriteCode(provider, textWriter, options);
         }
 
         public static void WriteCode(this CodeNamespace @namespace, CodeDomProvider provider, TextWriter textWriter, CodeGeneratorOptions options)
         {
+            if (@namespace == null)
+                throw new ArgumentNullException("namespace");
+            if (provider == null)
+                throw new ArgumentNullException("provider");
+            if (textWriter == null)
+                throw new ArgumentNullException("textWriter");
             CodeGenerator.ValidateIdentifiers(@namespace);
             if (textWriter is IndentedTextWriter)
                 provider.GenerateCodeFromNamespace(@namespace, textWriter, options);
@@ -39,6 +54,8 @@ namespace CsCodeGenerator
 
         public static string GenerateCSharpCode(this CodeNamespace target, CodeGeneratorOptions options)
         {
+            if (target == null)
+                throw new ArgumentNullException("target");
             using (StringWriter textWriter = new StringWriter())
             {
                 target.WriteCSharpCode(textWriter, options);
@@ -50,6 +67,10 @@ namespace CsCodeGenerator
 
         public static string GenerateCode(this CodeNamespace @namespace, CodeDomProvider provider, CodeGeneratorOptions options)
         {
+            if (@namespace == null)
+                throw new ArgumentNullException("namespace");
+            if (provider == null)
+                throw new ArgumentNullException("provider");
             using (StringWriter textWriter = new StringWriter())
             {
                 @namespace.WriteCode(provider, textWriter, options);
