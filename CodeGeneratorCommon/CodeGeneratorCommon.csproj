@@ -41,11 +41,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ItemProductionTask.cs" />
     <Compile Include="ConcurrentTransformer.cs" />
     <Compile Include="ConcurrentTransformWorker.cs" />
+    <Compile Include="IProducerConsumerQueue.cs" />
     <Compile Include="IThreadSync.cs" />
     <Compile Include="OneToMany.cs" />
+    <Compile Include="ProducerConsumerQueue.cs" />
     <Compile Include="ThreadingExtensions.cs" />
     <Compile Include="TransformQueue.cs" />
     <Compile Include="UniqueCollection.cs" />
