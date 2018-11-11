@@ -49,17 +49,26 @@
   <ItemGroup>
     <Compile Include="CodeDomExtensions.cs" />
     <Compile Include="CodeClassExtensibility.cs" />
+    <Compile Include="Commands\Add-CodeConstructor.cs" />
     <Compile Include="Commands\Add-CodeEnumDeclaration.cs" />
+    <Compile Include="Commands\Add-CodeFIeld.cs" />
+    <Compile Include="Commands\Add-CodeGenericParameter.cs" />
+    <Compile Include="Commands\Add-CodeImplements.cs" />
     <Compile Include="Commands\Add-CodeInterfaceDeclaration.cs" />
+    <Compile Include="Commands\Add-CodeMethod.cs" />
+    <Compile Include="Commands\Add-CodeProperty.cs" />
     <Compile Include="Commands\Add-CodeStructDeclaration.cs" />
     <Compile Include="CodeEnumUnderlyingType.cs" />
     <Compile Include="CodeStructLayout.cs" />
+    <Compile Include="Commands\Add-MethodParameter.cs" />
     <Compile Include="Commands\CodeTypeDeclarationCommand.cs" />
     <Compile Include="Commands\Add-CodeClassDeclaration.cs" />
     <Compile Include="Commands\Find-CodeTypeDeclaration.cs" />
+    <Compile Include="Commands\Set-CodeBaseType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ValidateCodeTypeDeclarationAttribute.cs" />
     <Compile Include="ValidateLanguageIndependentIdentifierAttribute.cs" />
+    <Compile Include="ValidateTypeSpecificationAttribute.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
