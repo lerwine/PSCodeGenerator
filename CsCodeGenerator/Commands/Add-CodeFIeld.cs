@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 
 namespace CsCodeGenerator.Commands
 {
-    [Cmdlet(VerbsCommon.Add, "CodeInterfaceDeclaration", DefaultParameterSetName = ParameterSetName_)]
-    public class Add_CodeFIeld : Cmdlet
+    [Cmdlet(VerbsCommon.Add, "CodeField", DefaultParameterSetName = ParameterSetName_)]
+    public class Add_CodeField : Cmdlet
     {
         public const string ParameterSetName_ = "";
 

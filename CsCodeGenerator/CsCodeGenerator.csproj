@@ -51,7 +51,7 @@
     <Compile Include="CodeClassExtensibility.cs" />
     <Compile Include="Commands\Add-CodeConstructor.cs" />
     <Compile Include="Commands\Add-CodeEnumDeclaration.cs" />
-    <Compile Include="Commands\Add-CodeFIeld.cs" />
+    <Compile Include="Commands\Add-CodeField.cs" />
     <Compile Include="Commands\Add-CodeGenericParameter.cs" />
     <Compile Include="Commands\Add-CodeImplements.cs" />
     <Compile Include="Commands\Add-CodeInterfaceDeclaration.cs" />

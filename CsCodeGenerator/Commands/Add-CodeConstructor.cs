@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace CsCodeGenerator.Commands
 {
-    [Cmdlet(VerbsCommon.Add, "CodeInterfaceDeclaration", DefaultParameterSetName = ParameterSetName_)]
+    [Cmdlet(VerbsCommon.Add, "CodeConstructor", DefaultParameterSetName = ParameterSetName_)]
     public class Add_CodeConstructor : Cmdlet
     {
         public const string ParameterSetName_ = "";
