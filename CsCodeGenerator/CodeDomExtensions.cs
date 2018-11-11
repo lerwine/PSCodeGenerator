@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CsCodeGenerator
+namespace CsCodeGenerator.Obsolete
 {
     public static class CodeDomExtensions
     {
