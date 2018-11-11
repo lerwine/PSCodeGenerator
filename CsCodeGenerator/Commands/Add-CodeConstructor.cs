@@ -16,7 +16,7 @@ namespace CsCodeGenerator.Commands
         public const string ParameterSetName_ = "";
 
         [Parameter(Mandatory = true, HelpMessage = "")]
-        [ValidateCodeTypeDeclaration(IsClass = true, IsStruct = true)]
+        [ValidateCodeTypeDeclaration(DeclarationType = DeclarationType.Class | DeclarationType.Struct)]
         public CodeTypeDeclaration TypeDeclaration { get; set; }
     }
 }
