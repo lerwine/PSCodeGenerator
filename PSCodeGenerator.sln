@@ -11,6 +11,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeGeneratorCommon", "Code
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTestProject1", "UnitTestProject1\UnitTestProject1.csproj", "{09A2260C-E813-4FB2-95A2-D593AB96EBB0}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{90020F98-6DE2-468F-BA50-D78B18D99001}"
+	ProjectSection(SolutionItems) = preProject
+		ConvertReferenceComments.ps1 = ConvertReferenceComments.ps1
+		Untitled1.ps1 = Untitled1.ps1
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

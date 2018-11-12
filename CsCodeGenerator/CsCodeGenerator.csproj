@@ -69,6 +69,8 @@
     <Compile Include="Commands\Test-CodeTypeReference.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ValidateCodeTypeDeclarationAttribute.cs" />
+    <Compile Include="ValidateCodeTypeParameterAttribute.cs" />
+    <Compile Include="ValidateCodeTypeReferenceAttribute.cs" />
     <Compile Include="ValidateLanguageIndependentIdentifierAttribute.cs" />
     <Compile Include="ValidateTypeSpecificationAttribute.cs" />
   </ItemGroup>
