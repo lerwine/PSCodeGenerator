@@ -175,8 +175,7 @@ namespace CodeGeneratorCommon
                     baseType = baseType.Substring(0, index);
             }
 
-            return baseType.Split('.').All(n => n.Length > 0 && CodeGenerator.IsValidLanguageIndependentIdentifier(baseType)) && typeReference.TypeArguments.Count == 0 || typeReference.TypeArguments.
-                return false;
+            return baseType.Split('.').All(n => n.Length > 0 && CodeGenerator.IsValidLanguageIndependentIdentifier(baseType)) && (typeReference.TypeArguments.Count == 0 || typeReference.TypeArguments.OfType<CodeTypeReference>().All(g => IsValidLanguageIndependentFullName(g)));
         }
     }
 }
