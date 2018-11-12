@@ -154,7 +154,19 @@ namespace CodeGeneratorCommon
 
         int IScriptExtent.EndOffset => EndScriptPosition.Offset;
 
-        public TypeNameInfo(object value)
+        /// <summary>
+        /// Converts an tobject to a <see cref="TypeNameInfo"/>.
+        /// </summary>
+        /// <param name="value">Object to convert.</param>
+        /// <returns>Object converted to a <see cref="TypeNameInfo"/>.</returns>
+        public static TypeNameInfo AsTypeNameInfo(object value)
+        {
+            if (value != null && value is TypeNameInfo)
+                return (TypeNameInfo)value;
+            return new TypeNameInfo(value);
+        }
+        
+        private TypeNameInfo(object value)
         {
             if (value == null)
             {
@@ -164,6 +176,7 @@ namespace CodeGeneratorCommon
             }
 
             OriginalBaseValue = (value is PSObject) ? ((PSObject)value).BaseObject : value;
+
             if (OriginalBaseValue is Type)
                 TypeReference = new CodeTypeReference((_typeName = new PSTypeName((Type)OriginalBaseValue)).Type);
             else if (OriginalBaseValue is PSTypeName)
@@ -194,8 +207,17 @@ namespace CodeGeneratorCommon
 
         Type ITypeName.GetReflectionType() => TypeName.Type;
 
+        /// <summary>
+        /// Gets the PowerShell type name.
+        /// </summary>
+        /// <returns>The PowerShell type name.</returns>
         public override string ToString() => LanguagePrimitives.ConvertTypeNameToPSTypeName(FullName);
 
+        /// <summary>
+        /// Converts a code type reference to a full name string.
+        /// </summary>
+        /// <param name="typeRef">Code type reference to convert.</param>
+        /// <returns>Full type name of code type reference.</returns>
         public static string ToFullName(CodeTypeReference typeRef)
         {
             if (typeRef == null)
@@ -207,6 +229,11 @@ namespace CodeGeneratorCommon
             return typeRef.BaseType;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="typeReference"></param>
+        /// <returns></returns>
         public static bool IsValidLanguageIndependentFullName(CodeTypeReference typeReference)
         {
             if (typeReference == null || string.IsNullOrWhiteSpace(typeReference.BaseType))
@@ -223,6 +250,14 @@ namespace CodeGeneratorCommon
             return baseType.Split('.').All(n => n.Length > 0 && CodeGenerator.IsValidLanguageIndependentIdentifier(baseType)) && (typeReference.TypeArguments.Count == 0 || typeReference.TypeArguments.OfType<CodeTypeReference>().All(g => IsValidLanguageIndependentFullName(g)));
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="namespace"></param>
+        /// <param name="genericCount"></param>
+        /// <param name="trailing"></param>
+        /// <returns></returns>
         public static string ParseTypeBaseName(string name, out string @namespace, out int genericCount, out string trailing)
         {
             if (!string.IsNullOrEmpty(name))
@@ -270,6 +305,11 @@ namespace CodeGeneratorCommon
             return name;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public static int IndexOfNamespaceNameSeparator(string name)
         {
             if (string.IsNullOrEmpty(name))
@@ -302,10 +342,24 @@ namespace CodeGeneratorCommon
             return nsIndex;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
         public bool Equals(TypeNameInfo other) => other != null && (ReferenceEquals(this, other) || FullName.Equals(other.FullName));
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(object obj) => Equals((obj == null || obj is TypeNameInfo) ? (TypeNameInfo)obj : new TypeNameInfo(obj));
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         public override int GetHashCode() => FullName.GetHashCode();
     }
 }
