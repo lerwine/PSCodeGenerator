@@ -65,10 +65,18 @@
     <Compile Include="Commands\Add-CodeClassDeclaration.cs" />
     <Compile Include="Commands\Find-CodeTypeDeclaration.cs" />
     <Compile Include="Commands\Set-CodeBaseType.cs" />
+    <Compile Include="Commands\Test-CodeTypeDeclaration.cs" />
+    <Compile Include="Commands\Test-CodeTypeReference.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ValidateCodeTypeDeclarationAttribute.cs" />
     <Compile Include="ValidateLanguageIndependentIdentifierAttribute.cs" />
     <Compile Include="ValidateTypeSpecificationAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CodeGeneratorCommon\CodeGeneratorCommon.csproj">
+      <Project>{BA172F45-5E24-41C8-A4CF-3CE8BE33C5A4}</Project>
+      <Name>CodeGeneratorCommon</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

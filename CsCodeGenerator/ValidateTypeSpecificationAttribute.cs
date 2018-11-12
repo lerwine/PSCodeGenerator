@@ -1,10 +1,12 @@
-﻿using System;
+﻿using CodeGeneratorCommon;
+using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CsCodeGenerator
@@ -13,35 +15,35 @@ namespace CsCodeGenerator
     {
         public bool AllowNull { get; set; }
         public bool AllowEmpty { get; set; }
+        private object _syncRoot = new object();
+        [ThreadStatic()]
+        private List<TypeNameInfo> _lastValidated = new List<TypeNameInfo>();
+        
         protected override void ValidateElement(object element)
         {
-            if (element == null)
-            {
-                if (AllowNull)
-                    return;
-                throw new ValidationMetadataException("Value cannot be null");
-            }
-            string name;
+            Monitor.Enter(_syncRoot);
             try
             {
-                object obj = (element is PSObject) ? ((PSObject)element).BaseObject : element;
-                if (obj is Type || obj is CodeTypeReference)
-                    return;
-                name = LanguagePrimitives.ConvertTo<string>(element);
-            }
-            catch (Exception exception) { throw new ValidationMetadataException("Could not convert value to string", exception); }
+                TypeNameInfo typeName = new TypeNameInfo(element);
+                _lastValidated.Add(typeName);
+                if (element == null)
+                {
+                    if (AllowNull)
+                        return;
+                    throw new ValidationMetadataException("Value cannot be null");
+                }
 
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                if (AllowEmpty)
-                    return;
-                throw new ValidationMetadataException("Value cannot be empty");
-            }
+                if (string.IsNullOrWhiteSpace(typeName.FullName))
+                {
+                    if (AllowEmpty)
+                        return;
+                    throw new ValidationMetadataException("Value cannot be empty");
+                }
 
-            if (!IsValidFullBaseName(name))
-                throw new ValidationMetadataException("Invalid language-independent identifier");
+                if (!TypeNameInfo.IsValidLanguageIndependentFullName(typeName.TypeReference))
+                    throw new ValidationMetadataException("Invalid language-independent identifier");
+            }
+            finally { Monitor.Exit(_syncRoot); }
         }
-
-        public static bool IsValidFullBaseName(string name) => name != null && name.Split('.').All(s => s.Trim().Length > 0 && CodeGenerator.IsValidLanguageIndependentIdentifier(s));
     }
 }
