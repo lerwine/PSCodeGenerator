@@ -16,6 +16,7 @@ namespace CodeGeneratorCommon
     public class TypeNameInfo : ITypeName, IScriptExtent, IEquatable<TypeNameInfo>
     {
         private string _fullName = null;
+        private string _shortName = null;
         private PSTypeName _typeName;
         private ScriptPosition _startScriptPosition = null;
         private ScriptPosition _endScriptPosition = null;
@@ -98,17 +99,109 @@ namespace CodeGeneratorCommon
         public string Name { get; }
 
         /// <summary>
+        /// Short type name.
+        /// </summary>
+        public string ShortName
+        {
+            get
+            {
+                string value = _shortName;
+                if (value == null)
+                {
+                    switch (Name.ToLower())
+                    {
+                        case "system.boolean":
+                        case "boolean":
+                            value = "bool";
+                            break;
+                        case "system.byte":
+                            value = "byte";
+                            break;
+                        case "system.char":
+                            value = "char";
+                            break;
+                        case "system.decimal":
+                            value = "decimal";
+                            break;
+                        case "system.double":
+                            value = "double";
+                            break;
+                        case "system.single":
+                        case "single":
+                            value = "float";
+                            break;
+                        case "system.int32":
+                        case "int32":
+                            value = "int";
+                            break;
+                        case "system.int64":
+                        case "int64":
+                            value = "long";
+                            break;
+                        case "system.object":
+                            value = "object";
+                            break;
+                        case "system.sbyte":
+                            value = "sbyte";
+                            break;
+                        case "system.int16":
+                        case "int16":
+                            value = "short";
+                            break;
+                        case "system.string":
+                            value = "string";
+                            break;
+                        case "system.uint32":
+                        case "uint32":
+                            value = "uint";
+                            break;
+                        case "system.uint64":
+                        case "uint64":
+                            value = "ulong";
+                            break;
+                        case "system.uint16":
+                        case "uint16":
+                            value = "ushort";
+                            break;
+                        case "system.void":
+                            value = "void";
+                            break;
+                        case "bool":
+                        case "byte":
+                        case "char":
+                        case "decimal":
+                        case "double":
+                        case "float":
+                        case "int":
+                        case "long":
+                        case "object":
+                        case "sbyte":
+                        case "short":
+                        case "string":
+                        case "uint":
+                        case "ulong":
+                        case "ushort":
+                        case "void":
+                            value = Name.ToLower();
+                            break;
+                    }
+                }
+                return value;
+            }
+        }
+
+        /// <summary>
         /// The full name of the <seealso cref="Type.Assembly"> if <seealso cref="PSTypeName.Type" /> is not null; otherwise null.
         /// </summary>
         public string AssemblyName => (TypeName.Type == null) ? null : TypeName.Type.Assembly.FullName;
 
         /// <summary>
-        /// True if <seealso cref="TypeReference" /> represents an array; otherwise, false.
+        /// <c>true</C> if <seealso cref="TypeReference" /> represents an array; otherwise, <c>false</C>.
         /// </summary>
         public bool IsArray => TypeReference.ArrayRank > 0;
 
         /// <summary>
-        /// True if <seealso cref="TypeReference" /> represents a geberic type; otherwise, false.
+        /// <c>true</C> if <seealso cref="TypeReference" /> represents a geberic type; otherwise, <c>false</C>.
         /// </summary>
         public bool IsGeneric => TypeReference.TypeArguments != null && TypeReference.TypeArguments.Count > 0;
 
@@ -177,6 +270,9 @@ namespace CodeGeneratorCommon
 
             OriginalBaseValue = (value is PSObject) ? ((PSObject)value).BaseObject : value;
 
+            string ns, tail;
+            int gc;
+
             if (OriginalBaseValue is Type)
                 TypeReference = new CodeTypeReference((_typeName = new PSTypeName((Type)OriginalBaseValue)).Type);
             else if (OriginalBaseValue is PSTypeName)
@@ -192,11 +288,32 @@ namespace CodeGeneratorCommon
                 if (LanguagePrimitives.TryConvertTo<string>(value, out name) || name == null)
                     name = "";
                 _typeName = new PSTypeName(name);
+                if (_typeName.Type == null)
+                {
+                    name = ParseTypeBaseName(TypeReference.BaseType, out ns, out gc, out tail) ?? "";
+                    Namespace = ns;
+                    if (gc > 0 && TypeReference.TypeArguments.Count > 0 && TypeReference.TypeArguments.Count != gc && tail.Length > 0)
+                        name += tail;
+                    switch (name)
+                    {
+                        case "short":
+                            _typeName = new PSTypeName((typeof(short)).FullName + tail);
+                            break;
+                        case "uint":
+                            _typeName = new PSTypeName((typeof(uint)).FullName + tail);
+                            break;
+                        case "ulong":
+                            _typeName = new PSTypeName((typeof(ulong)).FullName + tail);
+                            break;
+                        case "ushort":
+                            _typeName = new PSTypeName((typeof(ushort)).FullName + tail);
+                            break;
+                    }
+
+                }
                 TypeReference = (_typeName.Type == null) ? new CodeTypeReference(name) : new CodeTypeReference(_typeName.Type);
             }
 
-            string ns, tail;
-            int gc;
             Name = ParseTypeBaseName(TypeReference.BaseType, out ns, out gc, out tail) ?? "";
             Namespace = ns;
             if (gc > 0 && TypeReference.TypeArguments.Count > 0 && TypeReference.TypeArguments.Count != gc && tail.Length > 0)
@@ -230,34 +347,34 @@ namespace CodeGeneratorCommon
         }
 
         /// <summary>
-        /// 
+        /// Determines whether all names in a type reference are valid language-independent identifiers.
         /// </summary>
-        /// <param name="typeReference"></param>
-        /// <returns></returns>
+        /// <param name="typeReference">Type reference to validate.</param>
+        /// <returns><c>true</c> if all names are valid language-independent identifiers; otherwise, <c>false</C>.</returns>
         public static bool IsValidLanguageIndependentFullName(CodeTypeReference typeReference)
         {
             if (typeReference == null || string.IsNullOrWhiteSpace(typeReference.BaseType))
                 return false;
             string baseType = typeReference.BaseType;
-            int index = baseType.LastIndexOf('`');
-            if (index > 0)
-            {
-                string n = baseType.Substring(index + 1);
-                if (n.Length > 0 && int.TryParse(n, out index) && (typeReference.TypeArguments.Count == 0 || typeReference.TypeArguments.Count == index))
-                    baseType = baseType.Substring(0, index);
-            }
+            string ns, tail;
+            int gc;
+            baseType = ParseTypeBaseName(baseType, out ns, out gc, out tail) ?? "";
+            if (gc > 0 && typeReference.TypeArguments.Count > 0 && typeReference.TypeArguments.Count != gc && tail.Length > 0)
+                baseType += tail;
 
-            return baseType.Split('.').All(n => n.Length > 0 && CodeGenerator.IsValidLanguageIndependentIdentifier(baseType)) && (typeReference.TypeArguments.Count == 0 || typeReference.TypeArguments.OfType<CodeTypeReference>().All(g => IsValidLanguageIndependentFullName(g)));
+            return baseType.Length > 0 && CodeGenerator.IsValidLanguageIndependentIdentifier(baseType) &&
+                (ns.Length == 0 || ns.Split('.').All(n => n.Length > 0 && CodeGenerator.IsValidLanguageIndependentIdentifier(n))) &&
+                (typeReference.TypeArguments.Count == 0 || typeReference.TypeArguments.OfType<CodeTypeReference>().All(g => IsValidLanguageIndependentFullName(g)));
         }
 
         /// <summary>
-        /// 
+        /// Parses a type name string.
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="namespace"></param>
-        /// <param name="genericCount"></param>
-        /// <param name="trailing"></param>
-        /// <returns></returns>
+        /// <param name="name">Type name string to parse.</param>
+        /// <param name="namespace">Namespace of type name string or an empty string if there was no namespace.</param>
+        /// <param name="genericCount">Number of generic arguments indicated by type name string or zero if not specified.</param>
+        /// <param name="trailing">Additional text after parsed type namespace and base name.</param>
+        /// <returns>The base name of the type string.</returns>
         public static string ParseTypeBaseName(string name, out string @namespace, out int genericCount, out string trailing)
         {
             if (!string.IsNullOrEmpty(name))
@@ -306,10 +423,10 @@ namespace CodeGeneratorCommon
         }
 
         /// <summary>
-        /// 
+        /// Gets index of character that separates the base type name from the namespace or declaring type.
         /// </summary>
-        /// <param name="name"></param>
-        /// <returns></returns>
+        /// <param name="name">Type name string.</param>
+        /// <returns>Index of the character that separates the base type name from the namespace / declaring type or null if none was found.</returns>
         public static int IndexOfNamespaceNameSeparator(string name)
         {
             if (string.IsNullOrEmpty(name))
@@ -343,23 +460,44 @@ namespace CodeGeneratorCommon
         }
 
         /// <summary>
-        /// 
+        /// Determines whether another <see cref="TypeNameInfo" /> is equal to the current.
         /// </summary>
-        /// <param name="other"></param>
-        /// <returns></returns>
+        /// <param name="other">Other <see cref="TypeNameInfo" /> to compare for equality.</param>
+        /// <returns><c>true</c> if <paramref name="other" /> is equal to the current object; otherwise, <c>false</C>.</returns>
         public bool Equals(TypeNameInfo other) => other != null && (ReferenceEquals(this, other) || FullName.Equals(other.FullName));
 
         /// <summary>
-        /// 
+        /// Determines whether another object is equal to the current.
         /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
+        /// <param name="obj">Object to compare for equality.</param>
+        /// <returns><c>true</c> if <paramref name="obj" /> is equal to the current object; otherwise, <c>false</C>.</returns>
         public override bool Equals(object obj) => Equals((obj == null || obj is TypeNameInfo) ? (TypeNameInfo)obj : new TypeNameInfo(obj));
 
         /// <summary>
-        /// 
+        /// Gets hashcode for the current object.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The hashcode for the current object.</returns>
         public override int GetHashCode() => FullName.GetHashCode();
+
+        public bool IsAssignableFrom(TypeNameInfo other)
+        {
+            if (other == null)
+                return false;
+            if (ReferenceEquals(this, other))
+                return true;
+            if (TypeName.Type != null)
+            {
+                if (other.TypeName.Type != null)
+                    return TypeName.Type.IsAssignableFrom(other.TypeName.Type);
+                return other.IsArray && TypeName.Type.IsAssignableFrom(typeof(Array));
+            }
+
+            if (other.TypeName.Type != null)
+                return IsArray && (typeof(Array)).IsAssignableFrom(other.TypeName.Type);
+                
+            return TypeReference.Options != other.TypeReference.Options && (FullName == other.FullName ||
+                (TypeReference.ArrayRank > 0 && TypeReference.ArrayRank == other.TypeReference.ArrayRank &&
+                (new TypeNameInfo(TypeReference.ArrayElementType)).IsAssignableFrom(new TypeNameInfo(other.TypeReference.ArrayElementType))));
+        }
     }
 }

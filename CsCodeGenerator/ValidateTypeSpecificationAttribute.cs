@@ -16,16 +16,12 @@ namespace CsCodeGenerator
         public bool AllowNull { get; set; }
         public bool AllowEmpty { get; set; }
         private object _syncRoot = new object();
-        [ThreadStatic()]
-        private List<TypeNameInfo> _lastValidated = new List<TypeNameInfo>();
         
         protected override void ValidateElement(object element)
         {
             Monitor.Enter(_syncRoot);
             try
             {
-                TypeNameInfo typeName = new TypeNameInfo(element);
-                _lastValidated.Add(typeName);
                 if (element == null)
                 {
                     if (AllowNull)
@@ -33,6 +29,8 @@ namespace CsCodeGenerator
                     throw new ValidationMetadataException("Value cannot be null");
                 }
 
+                TypeNameInfo typeName = TypeNameInfo.AsTypeNameInfo(element);
+                
                 if (string.IsNullOrWhiteSpace(typeName.FullName))
                 {
                     if (AllowEmpty)

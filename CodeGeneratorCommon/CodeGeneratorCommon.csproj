@@ -51,6 +51,7 @@
     <Compile Include="ThreadingExtensions.cs" />
     <Compile Include="TransformQueue.cs" />
     <Compile Include="TypeNameInfo.cs" />
+    <Compile Include="TypeRefInfo.cs" />
     <Compile Include="UniqueCollection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
