@@ -1,3 +1,4 @@
+using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
@@ -93,7 +94,7 @@ namespace CsCodeGenerator
     }
     
     [Flags]
-    public sealed enum CodeTypeDeclarationType : byte
+    public enum CodeTypeDeclarationType : byte
     {
     	Any = 0x0F,
     	NonValue = 0x03,

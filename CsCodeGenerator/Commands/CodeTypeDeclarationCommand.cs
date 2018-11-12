@@ -59,7 +59,7 @@ namespace CsCodeGenerator.Commands
         {
             CodeTypeDeclaration codeTypeDeclaration = new CodeTypeDeclaration(name);
             codeTypeDeclaration.TypeAttributes = (codeTypeDeclaration.TypeAttributes & ~(mask | TypeAttributes.VisibilityMask)) | flags | ((isInternal) ? TypeAttributes.NotPublic : TypeAttributes.Public);
-            @namespace.Types.Add(codeTypeDeclaration);
+            parent.Members.Add(codeTypeDeclaration);
             return codeTypeDeclaration;
         }
 
