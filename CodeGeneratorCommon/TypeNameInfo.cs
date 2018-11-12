@@ -5,20 +5,34 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
 using System.Management.Automation.Language;
-using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace CodeGeneratorCommon
 {
-    public class TypeNameInfo : ITypeName, IScriptExtent
+    /// <summary>
+    /// Represents parsed type name information.
+    /// </summary>
+    public class TypeNameInfo : ITypeName, IScriptExtent, IEquatable<TypeNameInfo>
     {
         private string _fullName = null;
         private PSTypeName _typeName;
         private ScriptPosition _startScriptPosition = null;
         private ScriptPosition _endScriptPosition = null;
 
-        public object OriginalValue { get; }
+        /// <summary>
+        /// Pattern for parsing namespace, name and generic argument count from a string value (usually from <seealso cref="CodeTypeReference.BaseType" />).
+        /// </summary>
+        public static readonly Regex NameParseRegex = new Regex(@"^((?<ns>(?=[^.\[\]]*\.)[^.\[\]]*(\.[^.\[\]]*(?=\.))*)\.)?(?<n>[^`\[\]]+)?(`(?<gc>\d+))?", RegexOptions.Compiled);
+        
+        /// <summary>
+        /// Original base value that was used to initialize the current <see cref="TypeNameInfo" />.
+        /// </summary>
+        public object OriginalBaseValue { get; }
 
+        /// <summary>
+        /// Represents a type string that can be used in PowerShell.
+        /// </summary>
         public PSTypeName TypeName
         {
             get
@@ -30,6 +44,9 @@ namespace CodeGeneratorCommon
             }
         }
 
+        /// <summary>
+        /// Full type name.
+        /// </summary>
         public string FullName
         {
             get
@@ -40,6 +57,11 @@ namespace CodeGeneratorCommon
                 return value;
             }
         }
+
+        /// <summary>
+        /// Full name of delcaring type for nested types; otherwise, mamespace of type reference.
+        /// </summary>
+        public string Namespace { get; }
 
         class ScriptPosition : IScriptPosition
         {
@@ -65,14 +87,29 @@ namespace CodeGeneratorCommon
             public string GetFullScript() => _parent.ToString();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public CodeTypeReference TypeReference { get; }
         
-        public string Name => TypeReference.BaseType;
+        /// <summary>
+        /// Name of type without namespace, array indices or generic parameters.
+        /// </summary>
+        public string Name { get; }
 
+        /// <summary>
+        /// The full name of the <seealso cref="Type.Assembly"> if <seealso cref="PSTypeName.Type" /> is not null; otherwise null.
+        /// </summary>
         public string AssemblyName => (TypeName.Type == null) ? null : TypeName.Type.Assembly.FullName;
 
+        /// <summary>
+        /// True if <seealso cref="TypeReference" /> represents an array; otherwise, false.
+        /// </summary>
         public bool IsArray => TypeReference.ArrayRank > 0;
 
+        /// <summary>
+        /// True if <seealso cref="TypeReference" /> represents a geberic type; otherwise, false.
+        /// </summary>
         public bool IsGeneric => TypeReference.TypeArguments != null && TypeReference.TypeArguments.Count > 0;
 
         IScriptExtent ITypeName.Extent => this;
@@ -121,19 +158,21 @@ namespace CodeGeneratorCommon
         {
             if (value == null)
             {
-                OriginalValue = value;
+                OriginalBaseValue = null;
+                TypeReference = new CodeTypeReference();
+                return;
             }
 
-            OriginalValue = (value is PSObject) ? ((PSObject)value).BaseObject : value;
-            if (OriginalValue is Type)
-                TypeReference = new CodeTypeReference((_typeName = new PSTypeName((Type)OriginalValue)).Type);
-            else if (OriginalValue is PSTypeName)
+            OriginalBaseValue = (value is PSObject) ? ((PSObject)value).BaseObject : value;
+            if (OriginalBaseValue is Type)
+                TypeReference = new CodeTypeReference((_typeName = new PSTypeName((Type)OriginalBaseValue)).Type);
+            else if (OriginalBaseValue is PSTypeName)
             {
-                _typeName = (PSTypeName)OriginalValue;
+                _typeName = (PSTypeName)OriginalBaseValue;
                 TypeReference = (_typeName.Type == null) ? new CodeTypeReference(_typeName.Name) : new CodeTypeReference(_typeName.Type);
             }
-            else if (OriginalValue is CodeTypeReference)
-                TypeReference = (CodeTypeReference)OriginalValue;
+            else if (OriginalBaseValue is CodeTypeReference)
+                TypeReference = (CodeTypeReference)OriginalBaseValue;
             else
             {
                 string name;
@@ -142,6 +181,13 @@ namespace CodeGeneratorCommon
                 _typeName = new PSTypeName(name);
                 TypeReference = (_typeName.Type == null) ? new CodeTypeReference(name) : new CodeTypeReference(_typeName.Type);
             }
+
+            string ns, tail;
+            int gc;
+            Name = ParseTypeBaseName(TypeReference.BaseType, out ns, out gc, out tail) ?? "";
+            Namespace = ns;
+            if (gc > 0 && TypeReference.TypeArguments.Count > 0 && TypeReference.TypeArguments.Count != gc && tail.Length > 0)
+                Name += tail;
         }
 
         Type ITypeName.GetReflectionAttributeType() => TypeName.Type;
@@ -161,7 +207,6 @@ namespace CodeGeneratorCommon
             return typeRef.BaseType;
         }
 
-
         public static bool IsValidLanguageIndependentFullName(CodeTypeReference typeReference)
         {
             if (typeReference == null || string.IsNullOrWhiteSpace(typeReference.BaseType))
@@ -177,5 +222,90 @@ namespace CodeGeneratorCommon
 
             return baseType.Split('.').All(n => n.Length > 0 && CodeGenerator.IsValidLanguageIndependentIdentifier(baseType)) && (typeReference.TypeArguments.Count == 0 || typeReference.TypeArguments.OfType<CodeTypeReference>().All(g => IsValidLanguageIndependentFullName(g)));
         }
+
+        public static string ParseTypeBaseName(string name, out string @namespace, out int genericCount, out string trailing)
+        {
+            if (!string.IsNullOrEmpty(name))
+            {
+                int index = IndexOfNamespaceNameSeparator(name);
+                if (index < 0)
+                    @namespace = "";
+                else
+                {
+                    @namespace = (index == 0) ? "" : name.Substring(0, index);
+                    index++;
+                    if (index == name.Length)
+                    {
+                        genericCount = 0;
+                        trailing = "";
+                        return "";
+                    }
+                    name = name.Substring(index);
+                }
+                index = name.IndexOfAny(new char[] { '`', '[', ']' });
+                if (index >= 0)
+                {
+                    if (name[index] != '`')
+                    {
+                        trailing = "";
+                        genericCount = 0;
+                        return name;
+                    }
+                    trailing = name.Substring(index);
+                    index++;
+                    int endIdx = index;
+                    while (endIdx < name.Length && char.IsDigit(name[endIdx]))
+                        endIdx++;
+                    if (index < name.Length && endIdx == name.Length && int.TryParse(name.Substring(index, endIdx - index), out genericCount))
+                        return name.Substring(0, index - 1);
+                    trailing = "";
+                    genericCount = 0;
+                    return name;
+                }
+            }
+            else
+                @namespace = "";
+            genericCount = 0;
+            trailing = "";
+            return name;
+        }
+
+        public static int IndexOfNamespaceNameSeparator(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return -1;
+            int startIndex = 0;
+            int nsIndex = -1;
+            int level = 0;
+            char[] tokenChars = new char[] { '.', '+', '[', ']' };
+            while (startIndex < name.Length)
+            {
+                int index = name.IndexOfAny(tokenChars, startIndex);
+                if (index < 0)
+                    return nsIndex;
+                switch (name[index])
+                {
+                    case ']':
+                        if (level > 0)
+                            level--;
+                        break;
+                    case '[':
+                        level++;
+                        break;
+                    default:
+                        if (level == 0)
+                            nsIndex = index;
+                        break;
+                }
+                startIndex = index + 1;
+            }
+            return nsIndex;
+        }
+
+        public bool Equals(TypeNameInfo other) => other != null && (ReferenceEquals(this, other) || FullName.Equals(other.FullName));
+
+        public override bool Equals(object obj) => Equals((obj == null || obj is TypeNameInfo) ? (TypeNameInfo)obj : new TypeNameInfo(obj));
+
+        public override int GetHashCode() => FullName.GetHashCode();
     }
 }
